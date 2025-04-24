@@ -241,7 +241,7 @@ width: 0;
   text-indent: 0;
   text-transform: uppercase;
       text-wrap: auto;
-    max-width: 35px;
+  max-width: 43px;
 }
 .roulette .spinner .item .label .text.discount{
 	font-size: 10px;
@@ -383,7 +383,7 @@ color: #000000 !important;
   width: 24px;
   height: 22px;
   vertical-align: middle;
-  margin-right: 2px;
+  margin-right: -1px;
   object-fit: contain;
       transform: rotate(-90deg);
 }
