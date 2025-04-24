@@ -308,7 +308,7 @@ RouletteWheel.prototype.render = function() {
     const textHeight = parseInt(((2 * Math.PI * R) / count) * .5);
 
     $item.find('.label').css({
-      transform: `translateY(${D * -0.28}px) translateX(${textHeight * 1.1}px) rotateZ(${90 + delta * .5}deg)`,
+      transform: `translateY(${D * -0.29}px) translateX(${textHeight * 1.15}px) rotateZ(${90 + delta * .5}deg)`,
       height: `${textHeight}px`,
       lineHeight: `${textHeight}px`,
       textIndent: `${R * .1}px`
