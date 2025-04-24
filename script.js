@@ -156,6 +156,30 @@ var RouletteWheel = function(el, items) {
 };
 _.extend(RouletteWheel.prototype, Backbone.Events);
 
+
+// === Добавляем фейковое вращение ===
+RouletteWheel.prototype.startFakeSpin = function() {
+  const self = this;
+  const $spinner = self.$el.find('.spinner');
+  self.fakeAngle = 0;
+
+  if (self.fakeSpinInterval) clearInterval(self.fakeSpinInterval);
+
+  self.fakeSpinInterval = setInterval(() => {
+    self.fakeAngle = (self.fakeAngle + 10) % 360;
+    $spinner.css('transform', `rotate(${self.fakeAngle}deg)`);
+  }, 50);
+};
+
+RouletteWheel.prototype.stopFakeSpin = function() {
+  const self = this;
+  if (self.fakeSpinInterval) {
+    clearInterval(self.fakeSpinInterval);
+    self.fakeSpinInterval = null;
+  }
+};
+
+
 RouletteWheel.prototype.refreshItems = function() {
   // Викликаємо функцію fetchGifts() з іншого файлу
   return fetchGifts()
@@ -197,6 +221,9 @@ RouletteWheel.prototype.spin = function(_index) {
   const self = this;
   if (this.$el.hasClass('busy')) return;
 
+  self.$el.addClass('busy');
+  self.startFakeSpin(); // запускаем фейковое вращение сразу
+
   this.refreshItems().then(() => {
     let index = _index;
     if (isNaN(parseInt(index)) || !self.items[index] || self.items[index].count <= 0) {
@@ -204,16 +231,14 @@ RouletteWheel.prototype.spin = function(_index) {
     }
 
     const item = self.items[index];
-	
-const data = {
-  id: item.id,
-  text: item.text
-};
-    // Викликаємо logSpinResult, щоб зберегти лог
+    const data = { id: item.id, text: item.text };
+
     logSpinResult(data, index).then(() => {
-      self._doSpin(index);
+      self._doSpin(index); // запускаем финальную анимацию
     }).catch(err => {
       console.error("❌ Fetch error:", err);
+      self.stopFakeSpin();
+      self.$el.removeClass('busy');
     });
   });
 };
@@ -227,7 +252,7 @@ RouletteWheel.prototype._doSpin = function(_index) {
   let raf;
   const totalDuration = 6000;
   const startTime = performance.now();
-  let startAngle = 0;
+  let startAngle = self.fakeAngle || 0; // начинаем с текущего угла
 
   const sectorAngle = _index * delta;
   const normalizedStart = startAngle % 360;
@@ -238,12 +263,7 @@ RouletteWheel.prototype._doSpin = function(_index) {
     return (t === d) ? b + c : c * (-Math.pow(2, -10 * t / d) + 1) + b;
   }
 
-  function playTick() {
-    tickAudio.currentTime = 0;
-    tickAudio.play().catch(() => {});
-  }
-
-  let lastTickedAngle = 0;
+  let lastTickedAngle = startAngle;
 
   const animate = (now) => {
     const elapsed = now - startTime;
@@ -252,7 +272,8 @@ RouletteWheel.prototype._doSpin = function(_index) {
 
       if (Math.abs(easedAngle - lastTickedAngle) >= tickAngleStep) {
         lastTickedAngle = easedAngle;
-        playTick();
+        tickAudio.currentTime = 0;
+        tickAudio.play().catch(() => {});
       }
 
       $spinner.css('transform', `rotate(${easedAngle}deg)`);
@@ -267,10 +288,12 @@ RouletteWheel.prototype._doSpin = function(_index) {
   self._angle = finalAngle;
   self._index = _index;
 
-  self.$el.addClass('busy');
+  self.stopFakeSpin(); // отключаем фейковое вращение плавно
+
   self.trigger('spin:start', self);
   requestAnimationFrame(animate);
 };
+
 
 RouletteWheel.prototype.render = function() {
   
@@ -354,6 +377,9 @@ $(window).ready(function() {
       spinner.render();
       spinner.bindEvents();
 
+
+      // Після повного завантаження і рендеру:
+      document.getElementById('preloader').style.display = 'none';
       // Подія при старті обертання
       spinner.on('spin:start', function(r) {
         console.log('spin start!');
