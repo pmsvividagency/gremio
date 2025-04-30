@@ -1,417 +1,309 @@
-  const { createClient } = supabase
-  const _supabase = createClient('https://sajqgagcsritkjifnicr.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhanFnYWdjc3JpdGtqaWZuaWNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwNjA3MTQsImV4cCI6MjA2MDYzNjcxNH0.39Hz8Ql39niAlAvk4rTvMgcF0AfwGTdXM_erUU95NGg')
+// script.js
 
+// === Supabase setup ===
+const { createClient } = supabase;
+const _supabase = createClient(
+  'https://sajqgagcsritkjifnicr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhanFnYWdjc3JpdGtqaWZuaWNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwNjA3MTQsImV4cCI6MjA2MDYzNjcxNH0.39Hz8Ql39niAlAvk4rTvMgcF0AfwGTdXM_erUU95NGg'
+);
+const baseUrl = 'https://sajqgagcsritkjifnicr.supabase.co/storage/v1/object/public/gremio/';
 
-async function getIp() {
-  try {
-    const response = await fetch('https://sajqgagcsritkjifnicr.supabase.co/functions/v1/get-ip');
-    const data = await response.json();
-    return data.ip || 'unknown';  // Повертаємо IP або 'unknown', якщо IP не знайдено
-  } catch (error) {
-    console.error('Error fetching IP:', error);
-    return 'unknown'; // Якщо не вдалося отримати IP, повертаємо 'unknown'
-  }
-}
+// State
+let items = [];
+let currentDeg = 0;
 
-async function saveLog(text) {
-  const ip = await getIp(); // Отримуємо IP через API або іншим способом
-
-  // Викликаємо insert і чекаємо відповідь
-  const { data, error } = await _supabase
-    .from('log')
-    .insert([{ id_gift: text.id, text: text.text, ip_user: ip }]);
-
-  if (error) {
-    console.error('Error saving log:', error);
-    return; // Якщо сталася помилка, припиняємо виконання
-  }
-
-  // Після успішного збереження логу, оновлюємо таблицю gifts
-  const { data: updateData, error: updateError } = await _supabase
-    .from('gifts')
-    .select('count')
-    .eq('id', text.id); // Отримуємо поточне значення count для цього id
-
-  if (updateError) {
-    console.error('Error fetching current gift count:', updateError);
-    return;
-  }
-
-  if (updateData.length > 0) {
-    const currentCount = updateData[0].count;
-    const { data: updatedGift, error: updateGiftError } = await _supabase
-      .from('gifts')
-      .update({ count: currentCount - 1 })  // Зменшуємо count на 1
-      .eq('id', text.id); // Оновлюємо запис за id
-
-    if (updateGiftError) {
-      console.error('Error updating gift count:', updateGiftError);
-    } else {
-      console.log('Gift count updated successfully:', updatedGift);
-      return 'ok'; // Повертаємо успішний результат
-    }
-  } else {
-    console.error('No gift found for id:', text.id);
-    return;
-  }
-}
-
-
+// === Data fetching ===
 async function getSpinStats() {
-  // Запитуємо таблицю spin_stats, щоб отримати статистику виграшів
-  const { data, error } = await _supabase
-    .from('spin_stats')
-    .select('*');  // Отримуємо всі записи з таблиці spin_stats
+  const { data, error } = await _supabase.from('spin_stats').select('*');
+  if (error) { console.error(error); return {}; }
+  return data.reduce((o, i) => (o[i.text] = i.won, o), {});
+}
 
-  const stats = {};
-  if (error) {
-    console.error('Error fetching spin stats:', error);
-  } else {
-    // Перетворюємо отримані дані в об'єкт, де кожен key - це text, а значення - це won
-    data.forEach(item => {
-      stats[item.text] = item.won;
-    });
-  }
-  return stats;
+// Прелоадер: скрывает спиннер загрузки
+function hidePreloader() {
+  const pre = document.getElementById('preloader');
+  if (pre) pre.style.display = 'none';
 }
 
 
-
-async function fetchGifts() {
-  const stats = await getSpinStats(); // Отримуємо статистику
-
-  const { data, error } = await _supabase
-    .from('gifts')
-    .select('*')
-    .order('sort_order', { ascending: true }); // Сортуємо за порядком
-	
-
-
-  if (error) {
-    console.error('Error fetching gifts:', error);
-  } else {
-    // Оновлюємо шанси виграшу
-    data.forEach(gift => {
-      gift.adjusted_chance = (gift.count_static > 0)
-        ? gift.chance * (gift.count / gift.count_static)
-        : 0;
-      gift.won = stats[gift.text] || 0;
-    });
-
-    console.log('Fetched gifts:', data);
-    return data;
-  }
-}
-
-// === ОНОВЛЕНИЙ script.js (v3.1) з логуванням до обертання ===
-const url = 'https://sajqgagcsritkjifnicr.supabase.co/storage/v1/object/public/gremio/'
-// ⏯️ Попередня активація звуку при першому кліку
-const tickAudio = new Audio("https://sajqgagcsritkjifnicr.supabase.co/storage/v1/object/public/gremio//tick.mp3");
+const tickAudio = new Audio('https://sajqgagcsritkjifnicr.supabase.co/storage/v1/object/public/gremio/tick.mp3');
 tickAudio.volume = 1;
+let lastTickAngle = 0;
+const tickAngleStep = 35; // угол между звуками в градусах
+
+// При первом клике активируем аудио-плейбек (для браузеров, требующих интерактивности)
 document.body.addEventListener('click', () => {
   tickAudio.play().then(() => {
     tickAudio.pause();
     tickAudio.currentTime = 0;
-  }).catch(err => {
-    console.warn("Tick sound play failed:", err);
-  });
+  }).catch(() => {});
 }, { once: true });
 
-let tickAngleStep = 35; // 🎯 змінюй для частоти тикань (в градусах)
 
-// Оновлений метод logSpinResult
-async function logSpinResult(item, index) {
+async function fetchGifts() {
+  const stats = await getSpinStats();
+  const { data, error } = await _supabase
+    .from('gifts').select('*').order('sort_order');
+  if (error) { console.error(error); return []; }
+  return data.map(g => ({
+    id:     g.id,
+    text:   g.text,
+    fulltext:   g.fulltext,
+    class:  g.class || '',
+    chance: g.count_static > 0 ? g.chance * (g.count / g.count_static) : 0,
+    count:  g.count,
+    icon:   g.icon
+  }));
+}
 
-const data = {
-  id: item.id,
-  text: item.text
-};
-  // Викликаємо saveLog для збереження логу в Supabase і чекаємо відповіді
-  try {
-    const response = await saveLog(data);  // Викликаємо saveLog і чекаємо відповідь
-	console.log(response);
-    // Перевіряємо, чи є успішний статус відповіді
-    if (response !== 'ok') {
-      console.error('❌ Log not saved:', response );
-      return; // Якщо немає відповіді або статус не 201, припиняємо виконання
-    }
+// === SVG Helpers ===
+const SVG_NS   = 'http://www.w3.org/2000/svg';
+const XLINK_NS = 'http://www.w3.org/1999/xlink';
 
-    // Якщо все добре і відповідь є, виконуємо обертання
-    console.log('Log saved:', response);
-    //self._doSpin(index);
-  } catch (err) {
-    console.error('❌ Fetch error:', err); // Виводимо помилку, якщо вона сталася
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  const p1 = polarToCartesian(cx, cy, r, endAngle);
+  const p2 = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = ((endAngle - startAngle) % 360) <= 180 ? '0' : '1';
+  return [
+    'M', p2.x, p2.y,
+    'A', r, r, 0, largeArcFlag, 0, p1.x, p1.y,
+    'L', cx, cy,
+    'Z'
+  ].join(' ');
+}
+
+// === Render SVG Wheel ===
+function renderSvgWheel(items) {
+  const svg = document.getElementById('rouletteSvg');
+  if (!svg) return;
+  svg.style.overflow = 'visible';
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  const size  = 400;
+  const cx    = size/2, cy = size/2, R = size/2;
+  const count = items.length;
+  const delta = 360 / count;
+
+  // ─── Градиент ─────────────────────
+  const defs = document.createElementNS(SVG_NS, 'defs');
+  const grad = document.createElementNS(SVG_NS, 'radialGradient');
+  grad.setAttribute('id', 'wheelGrad');
+  const stop1 = document.createElementNS(SVG_NS, 'stop');
+  stop1.setAttribute('offset', '0%');
+  stop1.setAttribute('stop-color', '#181717');
+  const stop2 = document.createElementNS(SVG_NS, 'stop');
+  stop2.setAttribute('offset', '100%');
+  stop2.setAttribute('stop-color', '#000');
+  grad.appendChild(stop1);
+  grad.appendChild(stop2);
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+
+  // ─── Группа колеса ────────────────
+  const wheelGroup = document.createElementNS(SVG_NS, 'g');
+  wheelGroup.setAttribute('id', 'wheelGroup');
+  svg.appendChild(wheelGroup);
+
+  // ─── Фон круга ─────────────────────
+  const bg = document.createElementNS(SVG_NS, 'circle');
+  bg.setAttribute('cx', cx);
+  bg.setAttribute('cy', cy);
+  bg.setAttribute('r', R);
+  bg.setAttribute('fill', 'url(#wheelGrad)');
+  wheelGroup.appendChild(bg);
+
+  // ─── Сектора с выступанием ────────
+  const strokeW = 2, extra = 10;
+  const outerR  = R + extra + strokeW/2;
+  for (let i = 0; i < count; i++) {
+    const start = i * delta, end = start + delta;
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', describeArc(cx, cy, outerR, start, end));
+    path.setAttribute('fill', i % 2 ? '#202020' : '#ff5408');
+    path.setAttribute('stroke', '#000');
+    path.setAttribute('stroke-width', strokeW);
+    path.setAttribute('stroke-linejoin', 'round');
+    wheelGroup.appendChild(path);
   }
+
+  // ─── Иконки ───────────────────────
+  const iconRad = R * 0.87, sizeImg = 45;
+  items.forEach((it, idx) => {
+    if (!it.icon) return;
+    const ang = (idx + 0.5) * delta;
+    const pos = polarToCartesian(cx, cy, iconRad, ang);
+
+    const ig = document.createElementNS(SVG_NS, 'g');
+    ig.setAttribute('transform', `translate(${pos.x},${pos.y}) rotate(${ang})`);
+
+    const img = document.createElementNS(SVG_NS, 'image');
+    img.setAttributeNS(XLINK_NS, 'href', baseUrl + it.icon);
+    img.setAttribute('width',  sizeImg);
+    img.setAttribute('height', sizeImg);
+    img.setAttribute('x', -sizeImg/2);
+    img.setAttribute('y', -sizeImg/2);
+
+    ig.appendChild(img);
+    wheelGroup.appendChild(ig);
+  });
+
+  // ─── Текст ────────────────────────
+  const defaultTextRad  = R * 0.76;
+  const discountTextRad = R * 0.95; // для класса discount
+  const maxChars   = 15;
+  const lineHeight = 1.2;
+  items.forEach((it, idx) => {
+    const ang = (idx + 0.5) * delta;
+    const rad = it.class === 'discount' ? discountTextRad : defaultTextRad;
+	const pos = polarToCartesian(cx, cy, rad, ang);
+
+    const dx = cx - pos.x, dy = cy - pos.y;
+    const degAng = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    const words = it.text.split(' ');
+    const lines = [];
+    let line = '';
+    words.forEach(w => {
+      const test = line ? line + ' ' + w : w;
+      if (test.length > maxChars && line) {
+        lines.push(line);
+        line = w;
+      } else {
+        line = test;
+      }
+    });
+    if (line) lines.push(line);
+
+    const totalEm = (lines.length - 1) * lineHeight;
+    const initEm  = -totalEm / 2;
+
+    const tg = document.createElementNS(SVG_NS, 'g');
+    tg.setAttribute('transform', `translate(${pos.x},${pos.y}) rotate(${degAng})`);
+
+    const textEl = document.createElementNS(SVG_NS, 'text');
+	let cls = it.class || '';
+	// добавляем ваш статический класс, например 'my-static-class'
+	cls = (cls ? cls + ' ' : '') + 'text';
+	textEl.setAttribute('class', cls);
+    textEl.setAttribute('fill', '#fff');
+    textEl.setAttribute('font-size', '14');
+    textEl.setAttribute('font-weight', 'bold');
+    textEl.setAttribute('text-anchor', 'start');
+    textEl.setAttribute('dominant-baseline', 'middle');
+
+    lines.forEach((ln, j) => {
+      const tspan = document.createElementNS(SVG_NS, 'tspan');
+      tspan.setAttribute('x', '0');
+      tspan.setAttribute('dy', j === 0 ? `${initEm}em` : `${lineHeight}em`);
+      tspan.textContent = ln;
+      textEl.appendChild(tspan);
+    });
+
+    tg.appendChild(textEl);
+    wheelGroup.appendChild(tg);
+  });
 }
 
 
-
-var RouletteWheel = function(el, items) {
-  this.$el = $(el);
-  this.items = items || [];
-  this._bis = false;
-  this._angle = 0;
-  this._index = 0;
-  this.options = { angleOffset: -90 };
-};
-_.extend(RouletteWheel.prototype, Backbone.Events);
-
-
-// === Добавляем фейковое вращение ===
-RouletteWheel.prototype.startFakeSpin = function() {
-  const self = this;
-  const $spinner = self.$el.find('.spinner');
-  self.fakeAngle = 0;
-
-  if (self.fakeSpinInterval) clearInterval(self.fakeSpinInterval);
-
-  self.fakeSpinInterval = setInterval(() => {
-    self.fakeAngle = (self.fakeAngle + 10) % 360;
-    $spinner.css('transform', `rotate(${self.fakeAngle}deg)`);
-  }, 50);
-};
-
-RouletteWheel.prototype.stopFakeSpin = function() {
-  const self = this;
-  if (self.fakeSpinInterval) {
-    clearInterval(self.fakeSpinInterval);
-    self.fakeSpinInterval = null;
-  }
-};
-
-
-RouletteWheel.prototype.refreshItems = function() {
-  // Викликаємо функцію fetchGifts() з іншого файлу
-  return fetchGifts()
-    .then(data => {
-      this.items = data.map(item => {
-        let chance = parseFloat(item.adjusted_chance || item.chance || 0);
-        let won = parseInt(item.won || 0);
-        if (won === 0) chance *= 1.5;
-        return {
-          id: item.id,
-          type: item.type,
-          text: item.text,
-          class: item.class,
-          icon: item.icon,
-          chance: chance,
-          count: item.count
-        };
-      });
-    })
-    .catch(err => {
-      console.error("Refresh error:", err);
-    });
-};
-
-RouletteWheel.prototype.weightedRandom = function() {
-  const items = this.items;
-  const totalChance = items.reduce((sum, item) => sum + (item.count > 0 ? item.chance : 0), 0);
-  let rand = Math.random() * totalChance;
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const chance = item.count > 0 ? item.chance : 0;
-    rand -= chance;
-    if (rand <= 0) return i;
-  }
-  return items.length - 1;
-};
-
-RouletteWheel.prototype.spin = function(_index) {
-  const self = this;
-  if (this.$el.hasClass('busy')) return;
-
-  self.$el.addClass('busy');
-  self.startFakeSpin(); // запускаем фейковое вращение сразу
-
-  this.refreshItems().then(() => {
-    let index = _index;
-    if (isNaN(parseInt(index)) || !self.items[index] || self.items[index].count <= 0) {
-      index = self.weightedRandom();
+// === Animation ===
+function animateSvgTo(targetDeg, duration = 6000) {
+  return new Promise(res => {
+    const g = document.getElementById('wheelGroup');
+    const start = currentDeg;
+    const t0 = performance.now();
+	function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
     }
-
-    const item = self.items[index];
-    const data = { id: item.id, text: item.text };
-
-    logSpinResult(data, index).then(() => {
-      self._doSpin(index); // запускаем финальную анимацию
-    }).catch(err => {
-      console.error("❌ Fetch error:", err);
-      self.stopFakeSpin();
-      self.$el.removeClass('busy');
-    });
-  });
-};
-
-RouletteWheel.prototype._doSpin = function(_index) {
-  const self = this;
-  const count = this.items.length;
-  const delta = 360 / count;
-  const $spinner = self.$el.find('.spinner');
-
-  let raf;
-  const totalDuration = 6000;
-  const startTime = performance.now();
-  let startAngle = self.fakeAngle || 0; // начинаем с текущего угла
-
-  const sectorAngle = _index * delta;
-  const normalizedStart = startAngle % 360;
-  const deltaToTarget = (sectorAngle - normalizedStart + 360) % 360;
-  const finalAngle = startAngle + deltaToTarget + 6 * 360;
-
-  function easeOutExpo(t, b, c, d) {
-    return (t === d) ? b + c : c * (-Math.pow(2, -10 * t / d) + 1) + b;
-  }
-
-  let lastTickedAngle = startAngle;
-
-  const animate = (now) => {
-    const elapsed = now - startTime;
-    if (elapsed < totalDuration) {
-      const easedAngle = easeOutExpo(elapsed, startAngle, finalAngle - startAngle, totalDuration);
-
-      if (Math.abs(easedAngle - lastTickedAngle) >= tickAngleStep) {
-        lastTickedAngle = easedAngle;
-        tickAudio.currentTime = 0;
+    function frame(t) {
+      const p = Math.min((t - t0) / duration, 1);
+      const eased = easeOutCubic(p);
+      const cur = start + (targetDeg - start) * eased;
+	  if (Math.abs(cur - lastTickAngle) >= tickAngleStep) {
+		  lastTickAngle = cur;
+		  tickAudio.currentTime = 0;
+		  tickAudio.play().catch(() => {});
+		}
+      g.setAttribute('transform', `rotate(${cur} 200 200)`);
+      if (p < 1) requestAnimationFrame(frame);
+      else { 
+	  currentDeg = targetDeg; 
+	  g.setAttribute('transform', `rotate(${currentDeg} 200 200)`);
+	          tickAudio.currentTime = 0;
         tickAudio.play().catch(() => {});
-      }
-
-      $spinner.css('transform', `rotate(${easedAngle}deg)`);
-      raf = requestAnimationFrame(animate);
-    } else {
-      $spinner.css('transform', `rotate(${finalAngle}deg)`);
-      self.$el.removeClass('busy');
-      self.trigger('spin:end', self);
+	  res();
+	  }
     }
-  };
+    requestAnimationFrame(frame);
+  });
+}
 
-  self._angle = finalAngle;
-  self._index = _index;
+// === Logging spin ===
+async function logSpin(id, text) {
+  const ipData = await fetch(
+    'https://sajqgagcsritkjifnicr.supabase.co/functions/v1/get-ip'
+  ).then(r => r.json()).catch(() => ({ ip: 'unknown' }));
+  await _supabase.from('log').insert([{ id_gift: id, text, ip_user: ipData.ip }]);
+}
 
-  self.stopFakeSpin(); // отключаем фейковое вращение плавно
-
-  self.trigger('spin:start', self);
-  requestAnimationFrame(animate);
-};
-
-
-RouletteWheel.prototype.render = function() {
+// === Spin handler ===
+async function spin() {
+  const btn = document.querySelector('.roulette .button');
+  const wheelEl  = document.querySelector('.roulette');  
+  const body    = document.body;
+  if (btn.disabled) return;
+  wheelEl.classList.add('busy');
+  body.classList.add('busy');
+  btn.disabled = true;
   
-  const $spinner = this.$el.find('.spinner');
-  const D = this.$el.width();
-  const R = D * 0.5;
-  const count = this.items.length;
-  const delta = 360 / count;
-  const colors = ['#ff5408', '#202020'];
+  
 
-  for (let i = 0; i < count; i++) {
-    const item = this.items[i];
-    const html = `
-      <div class="item" data-index="${i}" data-type="${item.type}">
-        <span class="label">
-          ${item.icon ? `<img src="${url}${item.icon}" class="prize-icon" alt="icon">` : ""}
-          <span class="text ${item.class || ''}">${item.text}</span>
-        </span>
-      </div>
-    `;
-    const $item = $(html);
-    const borderTopWidth = D + D * 0.0025;
-    const deltaInRadians = delta * Math.PI / 180;
-    const borderRightWidth = D / (1 / Math.tan(deltaInRadians));
-    const r = delta * (count - i) + this.options.angleOffset - delta * 0.5;
-    const color = colors[i % 2];
+  items = await fetchGifts();
+  renderSvgWheel(items);
 
-    $item.css({
-      borderTopWidth,
-      borderRightWidth,
-      transform: `scale(2) rotate(${r}deg)`,
-      borderTopColor: color
-    });
-
-    const textHeight = parseInt(((2 * Math.PI * R) / count) * .5);
-
-    $item.find('.label').css({
-      transform: `translateY(${D * -0.29}px) translateX(${textHeight * 1.15}px) rotateZ(${90 + delta * .5}deg)`,
-      height: `${textHeight}px`,
-      lineHeight: `${textHeight}px`,
-      textIndent: `${R * .1}px`
-    });
-
-    $spinner.append($item);
+  const total = items.reduce((s, it) => it.count > 0 ? s + it.chance : s, 0);
+  let r = Math.random() * total;
+  let winner = 0;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].count > 0) {
+      r -= items[i].chance;
+      if (r <= 0) { winner = i; break; }
+    }
   }
 
-  $spinner.css({ fontSize: `${parseInt(R * 0.06)}px` });
-};
+  const delta = 360 / items.length;
+  const centerAng = (winner + 0.5) * delta;
+  const norm = ((currentDeg % 360) + 360) % 360;
+  const arrowAngle = 270;
+  let desired = arrowAngle - (norm + centerAng);
+  desired = ((desired % 360) + 360) % 360;
+  const target = currentDeg + 6 * 360 + desired;
 
-RouletteWheel.prototype.bindEvents = function() {
-  this.$el.find('.button').on('click', $.proxy(this.spin, this));
-};
+  await animateSvgTo(target);
+  await logSpin(items[winner].id, items[winner].text);
 
-$(window).ready(function() {
-  // Викликаємо вашу функцію fetchGifts() замість fetch()
-  fetchGifts()
-    .then(fetchedData => {
-      console.log('Received data from fetchGifts:', fetchedData); // Логування отриманих даних
-
-      // Перевіряємо, чи отримані дані є масивом
-      if (!Array.isArray(fetchedData)) {
-        console.error("Received data is not an array:", fetchedData);
-        return; // Якщо дані не є масивом, зупиняємо виконання
-      }
-
-      // Форматуємо дані для рулетки
-      const formattedData = fetchedData.map(item => ({
-        id: item.id,
-        type: item.type,
-        text: item.text,
-        class: item.class,
-        icon: item.icon,
-        chance: parseFloat(item.adjusted_chance || item.chance || 0),
-        count: item.count
-      }));
-
-      console.log('Formatted data:', formattedData);
-
-      // Створення екземпляру рулетки та рендеринг
-      spinner = new RouletteWheel($('.roulette'), formattedData);
-      spinner.render();
-      spinner.bindEvents();
-
-
-      // Після повного завантаження і рендеру:
-      document.getElementById('preloader').style.display = 'none';
-      // Подія при старті обертання
-      spinner.on('spin:start', function(r) {
-        console.log('spin start!');
-      });
-
-      // Подія при закінченні обертання
-      spinner.on('spin:end', function(r) {
-        const item = spinner.items[r._index];
-        document.getElementById('popup-result').innerHTML = `
-          <div class="congr">Вітаємо!</div>
-          <div class="congr2">Ви виграли:</div>
-          <div class="congr3 ${item.class || ''}">${item.text}</div>
-          ${item.icon ? `<img src="${url}${item.icon}" alt="icon" style="max-width: 120px; margin-top: 10px;">` : ''}
-        `;
-        document.getElementById('popup').classList.remove('hidden');
-      });
-
-      // Закриття спливаючого вікна
-      document.getElementById('popup-close').addEventListener('click', function () {
-        document.getElementById('popup').classList.add('hidden');
-      });
-
-
-      // Масштабування рулетки під розмір контейнера
-      scaleRouletteToWrapper();
-
-    })
-    .catch(err => {
-      console.error("Ошибка при загрузке данных рулетки:", err);
-    });
-	
-});
+  const prize = items[winner];
+const popup = document.getElementById('popup-result');
+// собираем HTML: можно стилизовать под свой .popup-content
+popup.innerHTML = `
+  <div class="congr">Вітаємо!</div>
+  <div class="congr2">Ви виграли:</div>
+  <div class="congr2d ${prize.class || ''}">${prize.fulltext}</div>
+  <div class="congr3 ${prize.class || ''}">${prize.text}</div>
+  ${prize.icon ? `<img src="${baseUrl + prize.icon}" alt="icon" class="popup-icon">` : ''}
+`;
+  
+  
+  
+  document.getElementById('popup').classList.remove('hidden');
+    wheelEl.classList.remove('busy');
+	body.classList.remove('busy');
+  btn.disabled = false;
+}
 
 function scaleRouletteToWrapper() {
   const baseSize = 400;
@@ -429,3 +321,18 @@ function scaleRouletteToWrapper() {
 
 // Масштабувати рулетку при зміні розміру вікна
 window.addEventListener('resize', scaleRouletteToWrapper);
+
+
+// === Events ===
+document.querySelector('.roulette .button').addEventListener('click', spin);
+document.getElementById('popup-close').addEventListener('click', () => {
+  document.getElementById('popup').classList.add('hidden');
+});
+
+// === Initial render ===
+window.addEventListener('load', async () => {
+  items = await fetchGifts();
+  renderSvgWheel(items);
+  scaleRouletteToWrapper();
+  hidePreloader();
+});
