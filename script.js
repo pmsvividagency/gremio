@@ -153,7 +153,7 @@ function renderSvgWheel(items) {
   });
 
   // ─── Текст ────────────────────────
-  const defaultTextRad  = R * 0.76;
+  const defaultTextRad  = R * 0.74;
   const discountTextRad = R * 0.95; // для класса discount
   const maxChars   = 15;
   const lineHeight = 1.2;
@@ -307,8 +307,8 @@ popup.innerHTML = `
 
 function scaleRouletteToWrapper() {
   const baseSize = 400;
-  const wrapper = document.querySelector('.roulette-wrapper');
-  const roulette = document.querySelector('.roulette');
+  const wrapper = document.querySelector('.roulette-wrapper'); // main  .roulette-wrapper
+  const roulette = document.querySelector('.roulette'); // wrapper   .roulette
 
   const wrapperWidth = wrapper.offsetWidth;
   const wrapperHeight = wrapper.offsetHeight;
