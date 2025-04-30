@@ -118,7 +118,7 @@ function renderSvgWheel(items) {
   wheelGroup.appendChild(bg);
 
   // ─── Сектора с выступанием ────────
-  const strokeW = 2, extra = 10;
+  const strokeW = 0, extra = 10;
   const outerR  = R + extra + strokeW/2;
   for (let i = 0; i < count; i++) {
     const start = i * delta, end = start + delta;
@@ -140,9 +140,12 @@ function renderSvgWheel(items) {
 
     const ig = document.createElementNS(SVG_NS, 'g');
     ig.setAttribute('transform', `translate(${pos.x},${pos.y}) rotate(${ang})`);
-
+	let cls = it.class || '';
+	// добавляем ваш статический класс, например 'my-static-class'
+	cls = (cls ? cls + ' ' : '') + 'icn';
     const img = document.createElementNS(SVG_NS, 'image');
     img.setAttributeNS(XLINK_NS, 'href', baseUrl + it.icon);
+    img.setAttribute('class',  cls);
     img.setAttribute('width',  sizeImg);
     img.setAttribute('height', sizeImg);
     img.setAttribute('x', -sizeImg/2);
@@ -156,7 +159,7 @@ function renderSvgWheel(items) {
   const defaultTextRad  = R * 0.74;
   const discountTextRad = R * 0.95; // для класса discount
   const maxChars   = 15;
-  const lineHeight = 1.2;
+  const lineHeight = 0.9;
   items.forEach((it, idx) => {
     const ang = (idx + 0.5) * delta;
     const rad = it.class === 'discount' ? discountTextRad : defaultTextRad;
@@ -244,6 +247,7 @@ function animateSvgTo(targetDeg, duration = 6000) {
 
 // === Logging spin ===
 async function logSpin(id, text) {
+	//throw new Error('Simulated logging failure');
   const ipData = await fetch(
     'https://sajqgagcsritkjifnicr.supabase.co/functions/v1/get-ip'
   ).then(r => r.json()).catch(() => ({ ip: 'unknown' }));
@@ -255,6 +259,12 @@ async function spin() {
   const btn = document.querySelector('.roulette .button');
   const wheelEl  = document.querySelector('.roulette');  
   const body    = document.body;
+  
+    if (items.every(it => it.count === 0)) {
+    document.getElementById('no-prizes').classList.remove('hidden');
+    return; 
+  }
+  
   if (btn.disabled) return;
   wheelEl.classList.add('busy');
   body.classList.add('busy');
@@ -283,8 +293,14 @@ async function spin() {
   desired = ((desired % 360) + 360) % 360;
   const target = currentDeg + 6 * 360 + desired;
 
+  const logPromise = logSpin(items[winner].id, items[winner].text)
+    .catch(err => {
+      console.error('Ошибка при записи лога:', err);
+	  document.getElementById('err').classList.remove('hidden');
+    });
+
   await animateSvgTo(target);
-  await logSpin(items[winner].id, items[winner].text);
+  //await logSpin(items[winner].id, items[winner].text);
 
   const prize = items[winner];
 const popup = document.getElementById('popup-result');
