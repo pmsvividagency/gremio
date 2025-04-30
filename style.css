@@ -2,20 +2,20 @@
   color-scheme: only light;
 }
 
-
-@import url("https://fonts.googleapis.com/css?family=Material+Icons|Work+Sans:400,700,900");
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
 
 html, body {
   background-color: #000000 !important;
   color: #fff !important;
   -webkit-text-fill-color: #fff !important;
   filter: none !important;
+    -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 * {
   filter: none !important;
 }
-
 img {
   filter: none !important;
   background-color: transparent !important;
@@ -25,16 +25,21 @@ img {
   background-color: transparent;
 }
 body {
+  font-family: "Nunito", sans-serif;
+  font-optical-sizing: auto;
   overflow: hidden;
   background-color: #000000 !important;
 -webkit-background-color: #000000 !important;
+ -webkit-text-size-adjust: 100%;
 display:flex;
     align-items: center;
     justify-content: center;
 	margin:0;
 	padding:0;
 	overflow: hidden;
+	 font-size: 16px;
 }
+
 img {
   filter: none !important;
   mix-blend-mode: normal !important;
@@ -130,7 +135,6 @@ img {
     border-radius: 100%;
 }
 .roulette {
-  font-family: "Work Sans", sans-serif;
   display: flex;
   position: absolute;
   width: 400px;
@@ -223,7 +227,7 @@ width: 0;
   left: 0;
   white-space: nowrap;
   transform-origin: 0 0;
-  font-size: 0.8em;
+  font-size: 4.5px!important;
 }
 .roulette .spinner .item .label i {
   display: inline-block;
@@ -237,12 +241,14 @@ width: 0;
   display: inline-block;
   vertical-align: middle;
   line-height: 1;
-  font-size: 4px;
+      /*font-size: 0.3rem;*/
+	      font-size: 4.5px;
   text-indent: 0;
   text-transform: uppercase;
       text-wrap: auto;
   max-width: 43px;
 }
+
 .roulette .spinner .item .label .text.discount{
 	font-size: 10px;
 }
@@ -333,7 +339,7 @@ color: #000000 !important;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -364,16 +370,16 @@ color: #000000 !important;
 }
 
 #popup-close {
-    width: 76px;
-    height: 76px;
+    width: 56px;
+    height: 56px;
     cursor: pointer;
     background-image: url('https://sajqgagcsritkjifnicr.supabase.co/storage/v1/object/public/gremio/btn_close.png');
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center center;
     position: absolute;
-    right: 30px;
-    bottom: 30px;
+    right: 20px;
+    bottom: 20px;
 }
 
 .hidden {
@@ -398,6 +404,11 @@ color: #000000 !important;
 	z-index:10;
 }
 
+.congrdop {
+	 font-size: 27px;
+    color: #ff5408;
+    -webkit-text-fill-color: #ff5408
+}
 .pyro > .before, .pyro > .after {
   position: absolute;
   width: 5px;
@@ -623,12 +634,12 @@ img {
 }
 
 .congr {
-	font-size: 40px;
+	font-size: 30px;
     font-weight: bold;
     text-transform: uppercase;
 }
 .congr2 {
-	font-size: 30px;
+	font-size: 20px;
     text-transform: uppercase;
 	    margin: 10px 0;
 }
@@ -638,9 +649,18 @@ img {
     text-transform: uppercase;
 }
 .congr3.discount {
-	font-size: 80px;
+	font-size: 60px;
     font-weight: bold;
     text-transform: uppercase;
+}
+.congr2d{
+	display:none;
+		font-size: 20px;
+    text-transform: uppercase;
+	    margin: 10px 0;
+}
+.congr2d.discount{
+	display:block;
 }
 
 @media (max-width: 1336px) {
@@ -652,11 +672,21 @@ img {
 @media (max-width: 1000px) and (orientation: portrait) {
   .wrapper {
     flex-direction: column;
-	            justify-content: flex-start;
+        align-items: center;
+                justify-content: flex-start;
 	overflow:hidden;
+	        padding-top: 40px;
+        box-sizing: border-box;
   }
   .popup-content {
 	  width:80%;
+  }
+  .roulette .spinner .item .text{
+	  max-width:35px;
+	      margin-top: 4px;
+  }
+  .prize-icon {
+	      margin-top: 2px;
   }
   #popup-close {
     width: 46px;
@@ -686,6 +716,10 @@ img {
     justify-content: center;
     padding:20px 0 30px 0;
 }
+.logo svg {
+	height:100%;
+	width:auto;
+}
 .dopdes svg {
         overflow: visible;
     }
@@ -711,7 +745,7 @@ transform-origin: 60px 117px;
 }
 .roulette-wrapper{
 	width:80%;
-	height:60%;
+	height:50%;
 }
 .logo img {
     height: 100%;
@@ -731,7 +765,7 @@ transform-origin: 60px 117px;
     width: 100%;
     height: auto;
         max-width: 50px;
-        margin-left: 0px;
+        margin-left: 20px;
     transform-origin: center center;
     transform: rotate(90deg);
 }
@@ -743,7 +777,7 @@ transform-origin: 60px 117px;
   left: 0;
   width: 100%;
   height: 100%;
-  background: #000; /* Чорний фон */
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -764,3 +798,95 @@ transform-origin: 60px 117px;
   100% { transform: rotate(360deg); }
 }
 
+.des {
+	animation: spin 42s linear infinite;
+}
+
+.text {
+	font-size:10px;
+	text-transform:uppercase;
+}
+.text.discount {
+	font-size:20px;
+}
+.text.chekm, .text.cup, .text.shav{
+	font-size:9px;
+}
+
+ @keyframes circles {
+      50% {
+        transform: translateY(-6em) scale(1, 1);
+      }
+      100% {
+        opacity: 0;
+      }
+     } 
+
+ @keyframes flame {
+   to {
+     transform-origin: bottom center;
+      transform: rotate(4deg);
+   }
+}
+
+@keyframes sideFlame {
+  100% {
+     transform-origin: bottom left;
+      transform: rotate(4deg);
+   }
+}
+
+@keyframes sideFlame1 {
+  100% {
+     transform-origin: bottom right;
+      transform: rotate(4deg);
+/*       transform: translateY(-.5em); */
+   }
+}  
+
+.busy .cirGroup1 {
+  animation: 1.6s circles infinite;
+  -webkit-animation-name: circles;
+  -webkit-animation-duration: 1.6s;
+}
+
+.busy .cirGroup2{
+  animation: 3s circles infinite;
+  -webkit-animation-name: circles;
+  -webkit-animation-duration: 3s;
+}
+
+.busy .cirGroup3{
+  animation: 6s circles infinite;
+  -webkit-animation-name: circles;
+  -webkit-animation-duration: 6s;
+}
+.busy .cirGroup4{
+  animation: 8s circles infinite;
+  -webkit-animation-name: circles;
+  -webkit-animation-duration: 6s;
+}
+
+.busy .flame{
+  -webkit-animation-name: flame;
+  -webkit-animation-duration: 2s;
+  animation: flame 2s ease-in-out infinite alternate;
+}
+
+.busy .sideFlame{
+  -webkit-animation-name: sideFlame1;
+  -webkit-animation-duration: 1.10s;
+  animation: sideFlame 1.10s ease-in-out infinite alternate;
+}
+.cir{
+	opacity:0;
+    transform: translate(175px, 0px);
+}
+.busy .cir {
+		opacity:1;
+}
+
+.st3{fill:#FFFFFF;}
+	.st4{fill:#FF4D00;}.cls-1{fill:#FC7226;}.cls-2{fill:#FC8223;}.cls-3{fill:#FC8223;}.cls-4{fill:#FC9823;}
+		.st0{fill:#FBF7F7;}
+	.st1{opacity:0.5;fill:#FF5408;}
