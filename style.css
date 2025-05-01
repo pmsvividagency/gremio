@@ -61,6 +61,7 @@ img {
 	    align-items: center;
     justify-content: center;
 	justify-content: space-around;
+	overflow: hidden;
 	    
 }
 .logo{
@@ -72,6 +73,9 @@ img {
         justify-content: right;
 		    padding-right: 70px;
 			    padding-left: 30px;
+				  will-change: transform;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 .logo svg{
 	width:100%;
@@ -404,6 +408,9 @@ color: #000000 !important;
     left: 0;
     top: 0;
 	z-index:10;
+	  will-change: transform;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 
 .congrdop {
@@ -928,4 +935,14 @@ transform-origin: 60px 117px;
     color: #ff5408!important;
     font-size: 40px;
     text-transform: uppercase;
+}
+.spinner {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+#wheelGroup {
+  will-change: transform;
+  transform-box: fill-box;
+  transform-origin: center center;
 }
