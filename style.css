@@ -52,6 +52,7 @@ img {
     justify-content: center;
 		width:100vw;
 	height:100vh;
+	overflow: hidden;
 }
 .wrapper{
 	width:80vw;
@@ -61,8 +62,6 @@ img {
 	    align-items: center;
     justify-content: center;
 	justify-content: space-around;
-	overflow: hidden;
-	    
 }
 .logo{
 	width:30%;
