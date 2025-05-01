@@ -815,7 +815,7 @@ transform-origin: 60px 117px;
 	text-transform:uppercase;
 }
 .text.discount {
-	font-size:20px;
+	font-size:20px!important;
 }
 .text.chekm, .text.cup, .text.shav{
 	font-size:9px;
@@ -903,7 +903,7 @@ transform-origin: 60px 117px;
 .st0{fill:#FBF7F7;}
 .st1{opacity:0.5;fill:#FF5408;}
 .text {
-	    font-size: 9px;
+	    font-size: 9px !important;
 }
 .cupam.text {
 	    font-size: 9px;
