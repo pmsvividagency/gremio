@@ -291,6 +291,8 @@ document.getElementById('popup-close').addEventListener('click',()=>{
   document.getElementById('popup').classList.add('hidden');
 });
 
+window.addEventListener('resize', scaleRouletteToWrapper);
+
 // initial render
 window.addEventListener('load',async ()=>{
   items=await fetchGifts();
