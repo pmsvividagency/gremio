@@ -179,10 +179,26 @@ function renderSvgWheel(items) {
 // === Logging spin ===
 async function logSpin(id,text){
 	//throw new Error('Simulated logging failure');
-  const ipData = await fetch(
+  const ipRes = await fetch(
     'https://sajqgagcsritkjifnicr.supabase.co/functions/v1/get-ip'
-  ).then(r=>r.json()).catch(()=>({ip:'unknown'}));
-  await _supabase.from('log').insert([{id_gift:id,text,ip_user:ipData.ip}]);
+  ).then(r => r.json()).catch(() => ({ ip: 'unknown' }));
+
+let ipToLog = ipRes.ip;
+
+  const { data, error } = await _supabase
+    .from('locations_ip')
+    .select('address')
+    .eq('ip', ipRes.ip)
+    .single();
+
+  if (data && data.address) {
+    ipToLog = data.address;
+  }
+
+
+  await _supabase.from('log').insert([
+    { id_gift: id, text: text, ip_user: ipToLog }
+  ]);
 }
 
 // === Spin handler ===
